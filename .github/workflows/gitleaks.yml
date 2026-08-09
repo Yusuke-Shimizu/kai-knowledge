@@ -1,0 +1,60 @@
+# 秘匿情報の検査。
+#
+# **なぜ CI に置くのか**：project-agent 側には `.githooks/pre-commit` があるが、
+# フックは**ローカルの commit にしか効かない**。書き戻し PR ツールは GitHub App の
+# API で commit を作るので、フックを1度も通らない。多層防御の1層が抜けるのを
+# ここで補う。
+#
+# **このリポジトリは public**なので、入ったものは取り消せない。だから
+# `paths` で絞らない ―― `knowledge_base/` を触らない PR でも必ず走らせる。
+#
+# 検出ルールは project-agent の `.gitleaks.toml` を使う（同じ規則を2か所に置かない）。
+# gitleaks 8.x の既定は AWS アクセスキー ID を拾わないので、あちらで補っている。
+
+name: gitleaks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+#: gitleaks のバージョン。上げるときはリリースを確認してから
+env:
+  GITLEAKS_VERSION: 8.30.1
+
+jobs:
+  scan:
+    name: 秘匿情報の検査
+    runs-on: ubuntu-latest
+    steps:
+      # 履歴も見るので全部取る。「同じ PR で入れて消した」も検出したい
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: 検出ルールを取る（project-agent は public）
+        uses: actions/checkout@v7
+        with:
+          repository: Yusuke-Shimizu/project-agent
+          ref: main
+          path: .validator
+          sparse-checkout: |
+            .gitleaks.toml
+          sparse-checkout-cone-mode: false
+
+      - name: gitleaks を入れる
+        # Action ではなくリリースのバイナリを使う。ライセンスキーの要否や
+        # Action 側の破壊的変更に振り回されないため（バージョンは env で固定）
+        run: |
+          curl -sSfL \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz gitleaks
+          ./gitleaks version
+
+      - name: 検査
+        # git 履歴を見る（`dir` だと作業ツリーだけになり、消した commit を見逃す）
+        run: ./gitleaks git . --config .validator/.gitleaks.toml --redact --verbose
