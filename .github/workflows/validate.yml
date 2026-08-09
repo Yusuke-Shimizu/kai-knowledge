@@ -12,18 +12,13 @@
 
 name: validate
 
+# **paths で絞らない。** これは ruleset の必須チェックなので、paths で起動しなかった
+# 回は「pending のまま永久に埋まらない」＝ PR がマージできなくなる。
+# ジョブは 30 秒ほどなので、毎回走らせるほうが安い。
 on:
   pull_request:
-    paths:
-      - "knowledge_base/**"
-      - "docs/topics.yml"
-      - ".github/workflows/validate.yml"
   push:
     branches: [main]
-    paths:
-      - "knowledge_base/**"
-      - "docs/topics.yml"
-      - ".github/workflows/validate.yml"
   workflow_dispatch:
 
 permissions:
