@@ -1,0 +1,6 @@
+# 起案（proposed-by-agent）で触られたくない場所。
+# エージェントの App は `knowledge_base/` 配下しか書けないようにツール側で縛っているが、
+# 縛りが破れたときに承認者が変わるようにしておく（多層防御の2枚目）。
+
+/.github/ @Yusuke-Shimizu
+/docs/ @Yusuke-Shimizu

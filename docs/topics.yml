@@ -1,0 +1,17 @@
+# topic に使える値。CI がこの一覧に照合する。
+#
+# **エージェントが新しい topic を勝手に増やせないようにするための allowlist。**
+# 乱造されると Knowledge Base のメタデータフィルタが効かなくなる。
+# 増やしたいときはこのファイルも同じ PR で更新する ＝ 人の判断が挟まる。
+
+topics:
+  - async # 非同期処理・キュー・ジョブ
+  - auth # 認証・認可
+  - compliance # 法令・監査・データ所在
+  - datastore # DB・スキーマ・データ保持
+  - frontend # 画面・UI
+  - iac # IaC・デプロイ
+  - integration # 外部連携
+  - multitenancy # マルチテナント・テナント分離
+  - release # リリース・移行計画
+  - sla # 可用性・性能目標

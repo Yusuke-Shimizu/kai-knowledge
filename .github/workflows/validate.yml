@@ -1,0 +1,63 @@
+# 正本（knowledge_base/）の front matter を検証する。
+#
+# 検証コードは **project-agent 側にあるものをそのまま使う**（同じ規則を2か所に置かない）。
+# project-agent は public なのでトークンなしで checkout できる ―― 正本とコードを
+# 別リポジトリに分けたときに、ここが効く。
+#
+# ⚠️ まだ動かない。**先に project-agent 側の対応が要る。**
+#    現在の code/scripts/seed_knowledge.py は検証対象のパスを
+#    `parents[2] / "knowledge_base"` で自分のリポジトリに固定しているため、
+#    他リポジトリの正本を渡せない。project-agent に
+#    `code/scripts/validate_knowledge.py --root <dir> --topics <file>`
+#    （front matter の必須キー・doc_id の一意性・ファイル名との一致・
+#      supersedes の対称性・topic の allowlist 照合）を足したうえで、
+#    ここの `on:` を workflow_dispatch から pull_request に切り替える。
+#
+# それまでは手動実行のみ（＝誤って「検証は通っている」と誤解しないようにするため、
+# 通らない検証を pull_request に置かない）。
+
+name: validate
+
+on:
+  workflow_dispatch:
+  # TODO: project-agent 側の対応が入ったら有効化する
+  # pull_request:
+  #   paths:
+  #     - "knowledge_base/**"
+  #     - "docs/topics.yml"
+  #     - ".github/workflows/validate.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  front-matter:
+    name: front matter の検証
+    runs-on: ubuntu-latest
+    steps:
+      - name: 正本を取る
+        uses: actions/checkout@v7
+
+      - name: 検証コードを取る（project-agent は public）
+        uses: actions/checkout@v7
+        with:
+          repository: Yusuke-Shimizu/project-agent
+          ref: main
+          path: .validator
+
+      # setup-uv は v8 以降メジャータグを公開しない。完全バージョンで指定する
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: 依存を入れる
+        working-directory: .validator
+        run: uv sync
+
+      - name: 検証
+        working-directory: .validator
+        run: |
+          uv run python code/scripts/validate_knowledge.py \
+            --root "$GITHUB_WORKSPACE/knowledge_base" \
+            --topics "$GITHUB_WORKSPACE/docs/topics.yml"
