@@ -4,28 +4,27 @@
 # project-agent は public なのでトークンなしで checkout できる ―― 正本とコードを
 # 別リポジトリに分けたときに、ここが効く。
 #
-# ⚠️ まだ動かない。**先に project-agent 側の対応が要る。**
-#    現在の code/scripts/seed_knowledge.py は検証対象のパスを
-#    `parents[2] / "knowledge_base"` で自分のリポジトリに固定しているため、
-#    他リポジトリの正本を渡せない。project-agent に
-#    `code/scripts/validate_knowledge.py --root <dir> --topics <file>`
-#    （front matter の必須キー・doc_id の一意性・ファイル名との一致・
-#      supersedes の対称性・topic の allowlist 照合）を足したうえで、
-#    ここの `on:` を workflow_dispatch から pull_request に切り替える。
+# 検証の実体は project-agent の code/scripts/validate_knowledge.py。
+# front matter の必須キー・doc_id の一意性・ファイル名との一致・置き場所と型の一致・
+# supersedes の対称性・topic の allowlist 照合を見る。
 #
-# それまでは手動実行のみ（＝誤って「検証は通っている」と誤解しないようにするため、
-# 通らない検証を pull_request に置かない）。
+# **エージェントが出す PR も人が出す PR も、同じこれを通る**（別経路を作らない）。
 
 name: validate
 
 on:
+  pull_request:
+    paths:
+      - "knowledge_base/**"
+      - "docs/topics.yml"
+      - ".github/workflows/validate.yml"
+  push:
+    branches: [main]
+    paths:
+      - "knowledge_base/**"
+      - "docs/topics.yml"
+      - ".github/workflows/validate.yml"
   workflow_dispatch:
-  # TODO: project-agent 側の対応が入ったら有効化する
-  # pull_request:
-  #   paths:
-  #     - "knowledge_base/**"
-  #     - "docs/topics.yml"
-  #     - ".github/workflows/validate.yml"
 
 permissions:
   contents: read
